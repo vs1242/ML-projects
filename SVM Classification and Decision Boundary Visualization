@@ -1,0 +1,75 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.datasets import make_classification
+
+def svm_classification_challenge():
+    # 1. Data Generation
+    X, y = make_classification(
+        n_samples=300,
+        n_features=2,
+        n_redundant=0,
+        random_state=25
+    )
+
+    # 2. Data Preprocessing
+    X_scaled = StandardScaler().fit_transform(X)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_scaled, y, test_size=0.3, random_state=25
+    )
+
+    # 3. SVM Training with Different Kernels
+    kernels = ["linear", "rbf", "poly"]
+    results = {}
+
+    for kernel in kernels:
+        svm_classifier = SVC(kernel=kernel, random_state=25)
+        svm_classifier.fit(X_train, y_train)
+        y_pred = svm_classifier.predict(X_test)
+
+        # Performance Metrics
+        results[kernel] = {
+            'accuracy': svm_classifier.score(X_test, y_test),
+            'classification_report': classification_report(y_test, y_pred),
+            'confusion_matrix': confusion_matrix(y_test, y_pred),
+            'model': svm_classifier
+        }
+
+        print(f"\n{kernel.capitalize()} Kernel Performance:")
+        print(results[kernel]['classification_report'])
+
+    # 4. Visualization Function
+    def plot_decision_boundary(kernel):
+        model = results[kernel]['model']
+        plt.figure(figsize=(10, 6))
+
+        # Plot training points
+        plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap='coolwarm', s=30, label="Train Data")
+        plt.scatter(X_test[:, 0], X_test[:, 1], c=y_test, cmap='coolwarm', edgecolors='k', s=50, label="Test Data")
+
+        # Create a grid to plot decision boundary
+        x_min, x_max = X_scaled[:, 0].min() - 1, X_scaled[:, 0].max() + 1
+        y_min, y_max = X_scaled[:, 1].min() - 1, X_scaled[:, 1].max() + 1
+        xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02),
+                             np.arange(y_min, y_max, 0.02))
+        Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+        Z = Z.reshape(xx.shape)
+        plt.contourf(xx, yy, Z, alpha=0.8, cmap='coolwarm')
+
+        plt.xlabel('Feature 1')
+        plt.ylabel('Feature 2')
+        plt.title(f'Decision Boundary: {kernel.capitalize()} Kernel')
+        plt.legend()
+        plt.show()
+
+    # Visualize decision boundaries
+    for kernel in kernels:
+        plot_decision_boundary(kernel)
+
+    return results
+
+# Run the challenge
+challenge_results = svm_classification_challenge()
